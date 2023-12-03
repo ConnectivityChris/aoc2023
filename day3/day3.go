@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"unicode"
 )
-
-var gearRatioMap = map[string][]int{}
 
 func main() {
 	file, _ := os.Open("input.txt")
@@ -17,106 +14,94 @@ func main() {
 	defer file.Close()
 
 	content, _ := io.ReadAll(file)
+	stringArray := strings.Split(string(content), "\n")
 
-	sum, gearRatio := calculateSum(strings.Split(string(content), "\n"))
+	sum, gearRatio := calculateSum(stringArray)
 	fmt.Println("Sum is: ", sum)
 	fmt.Println("Gear Ratio is: ", gearRatio)
 }
 
-func calculateSum(stringArray []string) (int, int) {
+type Point struct {
+	X int
+	Y int
+}
+
+var coordinateChecks = []Point{
+	{0, -1},  // Up
+	{1, -1},  // Up Right
+	{1, 0},   // Right
+	{1, 1},   // Down Right
+	{0, 1},   // Down
+	{-1, 1},  // Down Left
+	{-1, 0},  // Left
+	{-1, -1}, // Up Left
+}
+
+var listOfAsteriks = map[Point]bool{}
+
+var gearRatioMap = map[Point][]int{}
+
+func calculateSum(input []string) (int, int) {
 	sum := 0
+	gearRatio := 0
+	currentNumber := 0
+	symbolFound := false
 
-	for l, line := range stringArray {
-		startIndex := -1
-		endIndex := -1
-		for i, char := range line {
-			if unicode.IsDigit(char) && startIndex == -1 {
-				startIndex = i
-				endIndex = i
-			} else if unicode.IsDigit(char) && startIndex != -1 {
-				endIndex = i
-			}
-
-			if !unicode.IsDigit(char) || i == len(line)-1 {
-				if startIndex != -1 && endIndex != -1 {
-					testString := line[startIndex : endIndex+1]
-					symbolFound := false
-
-					previousLine := ""
-					nextLine := ""
-
-					if l > 0 {
-						previousLine = stringArray[l-1]
+	for y, line := range input {
+		for x, char := range line {
+			if unicode.IsDigit(char) {
+				value := int(char - '0')
+				currentNumber = currentNumber*10 + value
+				for _, point := range coordinateChecks {
+					neighbourX := x + point.X
+					neighbourY := y + point.Y
+					if neighbourY < 0 || neighbourY >= len(input) || neighbourX < 0 || neighbourX >= len(input[0]) {
+						continue
 					}
-
-					if l != len(stringArray)-1 {
-						nextLine = stringArray[l+1]
+					neighbouringChar := rune(input[neighbourY][neighbourX])
+					if !unicode.IsDigit(neighbouringChar) && neighbouringChar != '.' {
+						symbolFound = true
 					}
-
-					if startIndex > 0 {
-						startIndex--
+					if neighbouringChar == '*' {
+						listOfAsteriks[Point{neighbourX, neighbourY}] = true
 					}
-					if endIndex < len(nextLine)-1 {
-						endIndex++
-					}
-
-					if previousLine != "" {
-						previousLineSlice := previousLine[startIndex : endIndex+1]
-						symbolFound = checkForSymbolInLine(previousLineSlice, testString, startIndex, l-1)
-
-					}
-
-					if nextLine != "" && !symbolFound {
-						nextLineSlice := nextLine[startIndex : endIndex+1]
-						symbolFound = checkForSymbolInLine(nextLineSlice, testString, startIndex, l+1)
-
-					}
-
-					if !symbolFound {
-						if startIndex > 0 {
-							leftChar := line[startIndex]
-							symbolFound = checkForSymbolInLine(string(leftChar), testString, startIndex, l)
-
-						}
-						if !symbolFound {
-							if endIndex < len(line) {
-								rightChar := line[endIndex]
-								symbolFound = checkForSymbolInLine(string(rightChar), testString, endIndex, l)
-
-							}
-						}
-					}
-
-					if symbolFound {
-						partNumber, _ := strconv.Atoi(testString)
-						sum += partNumber
-					}
-
-					startIndex = -1
-					endIndex = -1
 				}
+			} else {
+				if currentNumber != 0 && symbolFound {
+					sum += currentNumber
+				}
+				if currentNumber != 0 && len(listOfAsteriks) > 0 {
+					for asterisk := range listOfAsteriks {
+						x := asterisk.X
+						y := asterisk.Y
+						gearRatioMap[Point{x, y}] = append(gearRatioMap[Point{x, y}], currentNumber)
+					}
+				}
+				currentNumber = 0
+				symbolFound = false
+				listOfAsteriks = map[Point]bool{}
 			}
 		}
+		if currentNumber != 0 && symbolFound {
+			sum += currentNumber
+		}
+		if currentNumber != 0 && len(listOfAsteriks) > 0 {
+			for asterisk := range listOfAsteriks {
+				x := asterisk.X
+				y := asterisk.Y
+				gearRatioMap[Point{x, y}] = append(gearRatioMap[Point{x, y}], currentNumber)
+			}
+		}
+		currentNumber = 0
+		symbolFound = false
+		listOfAsteriks = map[Point]bool{}
 	}
 
-	return sum, getGearRatio()
-}
-
-func checkForSymbolInLine(stringToCheck string, partNumber string, startIndex int, lineNumber int) bool {
-	if strings.Contains(stringToCheck, "*") {
-		partId, _ := strconv.Atoi(partNumber)
-		gearRatioMap[fmt.Sprintf("Line%d;Index%d", lineNumber, strings.Index(stringToCheck, "*")+startIndex)] = append(gearRatioMap[fmt.Sprintf("Line%d;Index%d", lineNumber, strings.Index(stringToCheck, "*")+startIndex)], partId)
-		return true
-	}
-	return strings.ContainsAny(stringToCheck, "*#-+@%&=$/")
-}
-
-func getGearRatio() int {
-	gearRatio := 0
 	for _, value := range gearRatioMap {
-		if len(value) > 1 {
+		if len(value) == 2 {
 			gearRatio += value[0] * value[1]
 		}
 	}
-	return gearRatio
+
+	return sum, gearRatio
 }

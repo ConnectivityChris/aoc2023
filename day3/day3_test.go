@@ -8,7 +8,7 @@ import (
 )
 
 func TestSum(t *testing.T) {
-	gearRatioMap = map[string][]int{}
+	gearRatioMap = map[Point][]int{}
 	file, _ := os.Open("testinput.txt")
 
 	defer file.Close()
@@ -25,7 +25,7 @@ func TestSum(t *testing.T) {
 }
 
 func TestWithFullInput(t *testing.T) {
-	gearRatioMap = map[string][]int{}
+	gearRatioMap = map[Point][]int{}
 	file, _ := os.Open("input.txt")
 
 	defer file.Close()
