@@ -1,3 +1,3 @@
-module aoc2023/day2
+module github.com/ConnectivityChris/aoc2023/day2
 
 go 1.21.4
