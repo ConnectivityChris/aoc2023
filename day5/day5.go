@@ -33,11 +33,17 @@ func main() {
 	// content, _ := io.ReadAll(file)
 
 	// stringArray := strings.Split(string(content), "\n")
-	lowestLocation := findLocation(file)
-	fmt.Println("Lowest Locaton: ", lowestLocation)
+	part1LowestLocation := findLocation(file, 1)
+	fmt.Println("Part 1 - Lowest Locaton: ", part1LowestLocation)
+
+	file2, _ := os.Open("input.txt")
+
+	defer file2.Close()
+	part2LowestLocation := findLocation(file2, 2)
+	fmt.Println("Part 2 - Lowest Locaton: ", part2LowestLocation)
 }
 
-func findLocation(file *os.File) int {
+func findLocation(file *os.File, partNumber int) int {
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	seedString := scanner.Text() // First line is always the seed list
@@ -61,26 +67,81 @@ func findLocation(file *os.File) int {
 
 	locationList := make([]int, 0)
 
+	endSeeds := make([]int, 0)
+
 	// Assume list is in order
-	for _, seed := range seedList {
-		// seed to soil
-		soilValue := findMappedId(seedToSoil, seed)
-		// soil to fertilizer
-		fertilizerValue := findMappedId(soilToFertilizer, soilValue)
-		// fertilizer to water
-		waterValue := findMappedId(fertilizerToWater, fertilizerValue)
-		// water to light
-		lightValue := findMappedId(waterToLight, waterValue)
-		// light to temp
-		tempValue := findMappedId(lightToTemp, lightValue)
-		// temp to humidity
-		humidityValue := findMappedId(tempToHumidity, tempValue)
-		// humidity to location
-		locationValue := findMappedId(humidityToLocation, humidityValue)
-		locationList = append(locationList, locationValue)
+	for i, seed := range seedList {
+		if partNumber == 2 {
+			if i%2 == 0 {
+				seedRange := seedList[i+1]
+				endSeeds = append(endSeeds, (seed+seedRange)-1)
+			}
+		} else {
+			// seed to soil
+			soilValue := findMappedId(seedToSoil, seed)
+			// soil to fertilizer
+			fertilizerValue := findMappedId(soilToFertilizer, soilValue)
+			// fertilizer to water
+			waterValue := findMappedId(fertilizerToWater, fertilizerValue)
+			// water to light
+			lightValue := findMappedId(waterToLight, waterValue)
+			// light to temp
+			tempValue := findMappedId(lightToTemp, lightValue)
+			// temp to humidity
+			humidityValue := findMappedId(tempToHumidity, tempValue)
+			// humidity to location
+			locationValue := findMappedId(humidityToLocation, humidityValue)
+			// fmt.Printf("seed: %v, %v %v %v %v %v %v %v\n", seed, soilValue, fertilizerValue, waterValue, lightValue, tempValue, humidityValue, locationValue)
+			locationList = append(locationList, locationValue)
+		}
+	}
+
+	if partNumber == 2 {
+		endSeed := slices.Max(endSeeds)
+		// fmt.Println(endSeed)
+		// reachedSeedId := false
+		for i := 0; i < endSeed; i++ {
+			locationValue := i
+			humidityValue := findInverseMappedId(humidityToLocation, locationValue)
+			tempValue := findInverseMappedId(tempToHumidity, humidityValue)
+			lightValue := findInverseMappedId(lightToTemp, tempValue)
+			waterValue := findInverseMappedId(waterToLight, lightValue)
+			fertilizerValue := findInverseMappedId(fertilizerToWater, waterValue)
+			soilValue := findInverseMappedId(soilToFertilizer, fertilizerValue)
+			seed := findInverseMappedId(seedToSoil, soilValue)
+			// fmt.Println("Location Value:", locationValue)
+			if checkSeedIsInRange(seed, seedList) {
+				// fmt.Printf("seed: %v, %v %v %v %v %v %v %v\n", seed, soilValue, fertilizerValue, waterValue, lightValue, tempValue, humidityValue, locationValue)
+				locationList = append(locationList, locationValue-1)
+				break
+			}
+		}
 	}
 
 	return slices.Min(locationList)
+}
+
+func checkSeedIsInRange(seed int, seedList []int) bool {
+	// fmt.Println("Seed:", seed)
+	for i, originalSeeds := range seedList {
+		if i%2 == 0 {
+			seedRange := seedList[i+1]
+			if seed >= originalSeeds && seed < originalSeeds+seedRange {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func findInverseMappedId(mapToSearch []RangeMap, initialId int) int {
+	mappedId := initialId
+	for _, m := range mapToSearch {
+		if initialId > m.dest && initialId < m.dest+m.rng {
+			mappedId = m.source + (initialId - m.dest)
+		}
+	}
+	return mappedId
 }
 
 func findMappedId(mapToSearch []RangeMap, initialId int) int {
