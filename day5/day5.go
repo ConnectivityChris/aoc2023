@@ -1,97 +1,118 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"os"
-	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
 
-// type RangeMap struct {
-// 	sourceRange []int
-// 	destRange   []int
-// }
+type RangeMap struct {
+	source int
+	dest   int
+	rng    int
+}
+
+var (
+	seedToSoil         = make([]RangeMap, 0)
+	soilToFertilizer   = make([]RangeMap, 0)
+	fertilizerToWater  = make([]RangeMap, 0)
+	waterToLight       = make([]RangeMap, 0)
+	lightToTemp        = make([]RangeMap, 0)
+	tempToHumidity     = make([]RangeMap, 0)
+	humidityToLocation = make([]RangeMap, 0)
+)
 
 func main() {
 	file, _ := os.Open("input.txt")
 
 	defer file.Close()
 
-	content, _ := io.ReadAll(file)
+	// content, _ := io.ReadAll(file)
 
-	stringArray := strings.Split(string(content), "\n")
-	lowestLocation := findLocation(stringArray)
+	// stringArray := strings.Split(string(content), "\n")
+	lowestLocation := findLocation(file)
 	fmt.Println("Lowest Locaton: ", lowestLocation)
 }
 
-func findLocation(input []string) int {
-	lowestLoction := 0
-	seedList := strings.Fields(strings.Split(input[0], "seeds: ")[1])
-	// fmt.Println(seedList)
-	re := regexp.MustCompile("map:")
-
-	mappingIndicies := make([]int, 0)
-
-	for i, str := range input {
-		if re.MatchString(str) {
-			mappingIndicies = append(mappingIndicies, i)
-		}
+func findLocation(file *os.File) int {
+	scanner := bufio.NewScanner(file)
+	scanner.Scan()
+	seedString := scanner.Text() // First line is always the seed list
+	// seedList := strings.Split(seedString, "seeds: ")[1]
+	seedStringList := strings.Fields(strings.Split(seedString, "seeds: ")[1])
+	seedList := []int{}
+	for _, seed := range seedStringList {
+		seedInt, _ := strconv.Atoi(seed)
+		seedList = append(seedList, seedInt)
 	}
+	scanner.Scan()
 
-	overallMappings := make(map[string]map[int]int)
-	for i, index := range mappingIndicies {
-		startIndex := index + 1
-		endIndex := len(input) - 1
-		if i != len(mappingIndicies)-1 {
-			endIndex = mappingIndicies[i+1] - 2
-		}
+	// Assume that the maps are in the right order
+	scanForMap(&seedToSoil, scanner)
+	scanForMap(&soilToFertilizer, scanner)
+	scanForMap(&fertilizerToWater, scanner)
+	scanForMap(&waterToLight, scanner)
+	scanForMap(&lightToTemp, scanner)
+	scanForMap(&tempToHumidity, scanner)
+	scanForMap(&humidityToLocation, scanner)
 
-		mappings := make(map[int]int)
-		for j := startIndex; j <= endIndex; j++ {
-			// fmt.Println(strings.Fields(input[j]))
-			source, _ := strconv.Atoi(strings.Fields(input[j])[1])
-			destination, _ := strconv.Atoi(strings.Fields(input[j])[0])
-			mapRange, _ := strconv.Atoi(strings.Fields(input[j])[2])
-			for k := 0; k < mapRange; k++ {
-				mappings[source+k] = destination + k
-			}
-		}
-		overallMappings[strings.Fields(input[index])[0]] = mappings
+	locationList := make([]int, 0)
 
-	}
-	fmt.Println(overallMappings)
+	// Assume list is in order
 	for _, seed := range seedList {
-		// lookup soil mapping
-		seedId, _ := strconv.Atoi(seed)
-		soilId := checkIDIsMapped(seedId, overallMappings["seed-to-soil"])
-		// fmt.Printf("Seed ID %d needs Soil ID %d\n", seedId, soilId)
-		fertilizerId := checkIDIsMapped(soilId, overallMappings["soil-to-fertilizer"])
-		// fmt.Printf("Soil ID %d needs Fertilizer ID %d\n", soilId, fertilizerId)
-		waterId := checkIDIsMapped(fertilizerId, overallMappings["fertilizer-to-water"])
-		// fmt.Printf("Fertilizer ID %d needs Water ID %d\n", fertilizerId, waterId)
-		lightId := checkIDIsMapped(waterId, overallMappings["water-to-light"])
-		// fmt.Printf("Water ID %d needs Light ID %d\n", waterId, lightId)
-		temperatureId := checkIDIsMapped(lightId, overallMappings["light-to-temperature"])
-		// fmt.Printf("Light ID %d needs Temperature ID %d\n", lightId, temperatureId)
-		humidityId := checkIDIsMapped(temperatureId, overallMappings["temperature-to-humidity"])
-		// fmt.Printf("Temperature ID %d needs Humidity ID %d\n", temperatureId, humidityId)
-		locationId := checkIDIsMapped(humidityId, overallMappings["humidity-to-location"])
-		// fmt.Printf("Humidity ID %d needs Location ID %d\n", humidityId, locationId)
-
-		if locationId < lowestLoction || lowestLoction == 0 {
-			lowestLoction = locationId
-		}
+		// seed to soil
+		soilValue := findMappedId(seedToSoil, seed)
+		// soil to fertilizer
+		fertilizerValue := findMappedId(soilToFertilizer, soilValue)
+		// fertilizer to water
+		waterValue := findMappedId(fertilizerToWater, fertilizerValue)
+		// water to light
+		lightValue := findMappedId(waterToLight, waterValue)
+		// light to temp
+		tempValue := findMappedId(lightToTemp, lightValue)
+		// temp to humidity
+		humidityValue := findMappedId(tempToHumidity, tempValue)
+		// humidity to location
+		locationValue := findMappedId(humidityToLocation, humidityValue)
+		locationList = append(locationList, locationValue)
 	}
 
-	return lowestLoction
+	return slices.Min(locationList)
 }
 
-func checkIDIsMapped(id int, mapToCheck map[int]int) int {
-	mappedId := mapToCheck[id]
-	if mappedId != 0 {
-		return mappedId
+func findMappedId(mapToSearch []RangeMap, initialId int) int {
+	mappedId := initialId
+	for _, m := range mapToSearch {
+		if initialId > m.source && initialId < m.source+m.rng {
+			mappedId = m.dest + (initialId - m.source)
+		}
 	}
-	return id
+	return mappedId
+}
+
+func createMapItem(line string) RangeMap {
+	destination, _ := strconv.Atoi(strings.Fields(line)[0])
+	source, _ := strconv.Atoi(strings.Fields(line)[1])
+	mapRange, _ := strconv.Atoi(strings.Fields(line)[2])
+	newMap := new(RangeMap)
+	newMap.dest = destination
+	newMap.source = source
+	newMap.rng = mapRange
+	return *newMap
+}
+
+func scanForMap(mapName *[]RangeMap, scanner *bufio.Scanner) {
+	var line string
+	scanner.Scan()
+	for scanner.Scan() {
+		line = scanner.Text()
+		if line == "" {
+			break
+		}
+
+		*mapName = append(*mapName, createMapItem(line))
+	}
 }
