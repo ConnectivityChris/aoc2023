@@ -53,3 +53,29 @@ func TestDay1Part2Example(t *testing.T) {
 		t.Errorf("Result was incorrect, got: %d, want: %d.", part2Result, 281)
 	}
 }
+
+func BenchmarkPart1(b *testing.B) {
+	file, _ := os.Open("input.txt")
+
+	defer file.Close()
+
+	content, _ := io.ReadAll(file)
+
+	stringArray := strings.Split(string(content), "\n")
+	for n := 0; n < b.N; n++ {
+		calculateTotal(stringArray)
+	}
+}
+
+func BenchmarkPart2(b *testing.B) {
+	file, _ := os.Open("input.txt")
+
+	defer file.Close()
+
+	content, _ := io.ReadAll(file)
+
+	stringArray := strings.Split(string(content), "\n")
+	for n := 0; n < b.N; n++ {
+		calculateTotalWithWords(stringArray)
+	}
+}

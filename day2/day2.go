@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -16,18 +15,20 @@ var cubeLimit map[string]int = map[string]int{
 }
 
 func main() {
-	file, err := os.Open("input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
+	file, _ := os.Open("input.txt")
+
 	defer file.Close()
 
-	content, err := io.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
+	content, _ := io.ReadAll(file)
 
-	stringArray := strings.Split(string(content), "\n")
+	possibleTotal, powerSum := findPossibleGames(content)
+
+	fmt.Println("Total of Possible Games:", possibleTotal)
+	fmt.Println("Total Power:", powerSum)
+}
+
+func findPossibleGames(input []byte) (int, int) {
+	stringArray := strings.Split(string(input), "\n")
 	possibleTotal := 0
 	powerSum := 0
 	for _, str := range stringArray {
@@ -40,8 +41,7 @@ func main() {
 		// Part 2
 		powerSum += calculateGamePower(str)
 	}
-	fmt.Println("Total of Possible Games:", possibleTotal)
-	fmt.Println("Total Power:", powerSum)
+	return possibleTotal, powerSum
 }
 
 func checkGameIsPossible(game string) (bool, int) {

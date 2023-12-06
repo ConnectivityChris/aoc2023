@@ -40,3 +40,16 @@ func TestWithFullInput(t *testing.T) {
 		t.Errorf("Result was incorrect, got: %d, want: %d.", gearRatio, 87605697)
 	}
 }
+
+func BenchmarkDay3(b *testing.B) {
+	gearRatioMap = map[Point][]int{}
+	file, _ := os.Open("input.txt")
+
+	defer file.Close()
+
+	content, _ := io.ReadAll(file)
+	input := strings.Split(string(content), "\n")
+	for i := 0; i < b.N; i++ {
+		calculateSum(input)
+	}
+}
