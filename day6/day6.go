@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -34,24 +35,23 @@ func calculatePart2(input []string) int {
 	return getMarginOfError([]string{times}, []string{distanceToBeat})
 }
 
+func solveQuadratic(time int, distance int) int {
+	d := math.Sqrt(float64(time*time - 4*distance))
+
+	from := math.Floor((float64(time) - d) / 2)
+	to := math.Ceil((float64(time) + d) / 2)
+
+	return int(to) - int(from) - 1
+}
+
 func getMarginOfError(times []string, distancesToBeat []string) int {
-	winningOptions := make([]int, 0)
+	marginOfError := 1
 
 	for i, time := range times {
 		maximumTime, _ := strconv.Atoi(time)
 		distanceToBeat, _ := strconv.Atoi(distancesToBeat[i])
-		totalWon := 0
-		for t := 0; t <= maximumTime; t++ {
-			if (maximumTime-t)*t > distanceToBeat {
-				totalWon++
-			}
-		}
-		winningOptions = append(winningOptions, totalWon)
-	}
-
-	marginOfError := 1
-	for _, option := range winningOptions {
-		marginOfError = marginOfError * option
+		totalWon := solveQuadratic(maximumTime, distanceToBeat)
+		marginOfError *= totalWon
 	}
 
 	return marginOfError
