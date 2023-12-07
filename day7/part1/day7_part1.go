@@ -27,7 +27,7 @@ var (
 )
 
 func main() {
-	fmt.Println("Part 1 -Total Winnings:", calculatePart1("input.txt"))
+	fmt.Println("Part 1 - Total Winnings:", calculatePart1("../input.txt"))
 }
 
 func readInput(filename string) ([]string, error) {

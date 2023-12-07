@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -16,18 +15,18 @@ type RangeMap struct {
 }
 
 var (
-	seedToSoil         = make([]RangeMap, 0)
-	soilToFertilizer   = make([]RangeMap, 0)
-	fertilizerToWater  = make([]RangeMap, 0)
-	waterToLight       = make([]RangeMap, 0)
-	lightToTemp        = make([]RangeMap, 0)
-	tempToHumidity     = make([]RangeMap, 0)
-	humidityToLocation = make([]RangeMap, 0)
+	seedToSoil         = make([]RangeMap, 0, 39)
+	soilToFertilizer   = make([]RangeMap, 0, 39)
+	fertilizerToWater  = make([]RangeMap, 0, 39)
+	waterToLight       = make([]RangeMap, 0, 39)
+	lightToTemp        = make([]RangeMap, 0, 39)
+	tempToHumidity     = make([]RangeMap, 0, 39)
+	humidityToLocation = make([]RangeMap, 0, 39)
 )
 
 func main() {
 
-	file, _ := os.Open("../ryaninput.txt")
+	file, _ := os.Open("../input.txt")
 
 	defer file.Close()
 	part1LowestLocation := findLocation(file)
@@ -56,6 +55,13 @@ func findLocation(file *os.File) int {
 	scanForMap(&tempToHumidity, scanner)
 	scanForMap(&humidityToLocation, scanner)
 
+	// fmt.Println(len(seedToSoil))
+	// fmt.Println(len(soilToFertilizer))
+	// fmt.Println(len(fertilizerToWater))
+	// fmt.Println(len(waterToLight))
+	// fmt.Println(len(lightToTemp))
+	// fmt.Println(len(tempToHumidity))
+	// fmt.Println(len(humidityToLocation))
 	locationList := make([]int, 0)
 
 	endSeeds := make([]int, 0)
@@ -68,9 +74,9 @@ func findLocation(file *os.File) int {
 		}
 	}
 
-	endSeed := slices.Max(endSeeds)
+	// endSeed := slices.Max(endSeeds)
 
-	for i := 1; i < endSeed; i++ {
+	for i := 1; i < 81956384; i++ {
 		locationValue := i
 		humidityValue := findInverseMappedId(humidityToLocation, locationValue)
 		tempValue := findInverseMappedId(tempToHumidity, humidityValue)
@@ -86,7 +92,8 @@ func findLocation(file *os.File) int {
 			break
 		}
 	}
-	return slices.Min(locationList)
+	// return slices.Min(locationList)
+	return 0
 }
 
 func checkSeedIsInRange(seed int, seedList []int) bool {
