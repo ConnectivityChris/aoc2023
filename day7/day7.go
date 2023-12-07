@@ -15,74 +15,65 @@ type Hand struct {
 }
 
 var (
-	fiveOfAKind  = make([]Hand, 0)
-	fourOfAKind  = make([]Hand, 0)
-	fullHouse    = make([]Hand, 0)
-	threeOfAKind = make([]Hand, 0)
-	twoPair      = make([]Hand, 0)
-	onePair      = make([]Hand, 0)
-	highCard     = make([]Hand, 0)
+	handCategories = map[string][]Hand{
+		"fiveOfAKind":  {},
+		"fourOfAKind":  {},
+		"fullHouse":    {},
+		"threeOfAKind": {},
+		"twoPair":      {},
+		"onePair":      {},
+		"highCard":     {},
+	}
 )
 
 func main() {
-	file, _ := os.Open("input.txt")
-
-	defer file.Close()
-
-	content, _ := io.ReadAll(file)
-	input := strings.Split(string(content), "\n")
-	fmt.Println("Total Winnings:", calculatePart1(input))
+	fmt.Println("Part 1 -Total Winnings:", calculatePart1("input.txt"))
 }
 
-func calculatePart1(input []string) int {
+func readInput(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.Split(string(content), "\n"), nil
+}
+
+func calculatePart1(filename string) int {
+	input, _ := readInput(filename)
 	totalWinnings := 0
 
 	for _, game := range input {
-		fields := strings.Fields(game)
-		cards := fields[0]
-		bid, _ := strconv.Atoi(fields[1])
+		cards, bid := parseGame(game)
 		hand := Hand{cards, bid}
-		cardCount := make(map[string]int)
-
-		for _, card := range cards {
-			cardStr := string(card)
-			cardCount[cardStr]++
-		}
-
-		numberCount := make(map[int]int)
-		for _, count := range cardCount {
-			numberCount[count]++
-		}
+		numberCount := countCards(cards)
 
 		switch {
 		case numberCount[5] == 1:
-			fiveOfAKind = append(fiveOfAKind, hand)
+			handCategories["fiveOfAKind"] = append(handCategories["fiveOfAKind"], hand)
 		case numberCount[4] == 1:
-			fourOfAKind = append(fourOfAKind, hand)
+			handCategories["fourOfAKind"] = append(handCategories["fourOfAKind"], hand)
 		case numberCount[3] == 1 && numberCount[2] == 1:
-			fullHouse = append(fullHouse, hand)
+			handCategories["fullHouse"] = append(handCategories["fullHouse"], hand)
 		case numberCount[3] == 1:
-			threeOfAKind = append(threeOfAKind, hand)
+			handCategories["threeOfAKind"] = append(handCategories["threeOfAKind"], hand)
 		case numberCount[2] == 2:
-			twoPair = append(twoPair, hand)
+			handCategories["twoPair"] = append(handCategories["twoPair"], hand)
 		case numberCount[2] == 1:
-			onePair = append(onePair, hand)
+			handCategories["onePair"] = append(handCategories["onePair"], hand)
 		default:
-			highCard = append(highCard, hand)
+			handCategories["highCard"] = append(handCategories["highCard"], hand)
 		}
 	}
 
-	// Sort the categories based on the cards left to right
-	sortAllTheMaps()
-	// print all of the card totals
-	fmt.Println("fiveOfAKind:", fiveOfAKind)
-	fmt.Println("fourOfAKind:", fourOfAKind)
-	fmt.Println("fullHouse:", fullHouse)
-	fmt.Println("threeOfAKind:", threeOfAKind)
-	fmt.Println("twoPair:", twoPair)
-	fmt.Println("onePair:", onePair)
-	fmt.Println("highCard:", highCard)
-	mergedHands := mergeTheMaps()
+	sortAllTheCategories()
+	mergedHands := mergeCategories()
 
 	for i, hand := range mergedHands {
 		totalWinnings += hand.bid * (i + 1)
@@ -91,42 +82,42 @@ func calculatePart1(input []string) int {
 	return totalWinnings
 }
 
-func mergeTheMaps() []Hand {
-	margedMap := make([]Hand, 0)
-	margedMap = append(margedMap, highCard...)
-	margedMap = append(margedMap, onePair...)
-	margedMap = append(margedMap, twoPair...)
-	margedMap = append(margedMap, threeOfAKind...)
-	margedMap = append(margedMap, fullHouse...)
-	margedMap = append(margedMap, fourOfAKind...)
-	margedMap = append(margedMap, fiveOfAKind...)
-
-	fmt.Printf("collapsedMap: %v\n", margedMap)
-	return margedMap
+func parseGame(game string) (string, int) {
+	fields := strings.Fields(game)
+	cards := fields[0]
+	bid, _ := strconv.Atoi(fields[1])
+	return cards, bid
 }
 
-func sortAllTheMaps() {
-	sort.Slice(fiveOfAKind[:], func(i, j int) bool {
-		return customSort(fiveOfAKind[i], fiveOfAKind[j])
-	})
-	sort.Slice(fourOfAKind[:], func(i, j int) bool {
-		return customSort(fourOfAKind[i], fourOfAKind[j])
-	})
-	sort.Slice(fullHouse[:], func(i, j int) bool {
-		return customSort(fullHouse[i], fullHouse[j])
-	})
-	sort.Slice(threeOfAKind[:], func(i, j int) bool {
-		return customSort(threeOfAKind[i], threeOfAKind[j])
-	})
-	sort.Slice(twoPair[:], func(i, j int) bool {
-		return customSort(twoPair[i], twoPair[j])
-	})
-	sort.Slice(onePair[:], func(i, j int) bool {
-		return customSort(onePair[i], onePair[j])
-	})
-	sort.Slice(highCard[:], func(i, j int) bool {
-		return customSort(highCard[i], highCard[j])
-	})
+func countCards(cards string) map[int]int {
+	cardCount := make(map[string]int)
+	numberCount := make(map[int]int)
+	for _, card := range cards {
+		cardCount[string(card)]++
+	}
+
+	for _, count := range cardCount {
+		numberCount[count]++
+	}
+	return numberCount
+}
+
+func mergeCategories() []Hand {
+	var mergedHands []Hand
+	order := []string{"highCard", "onePair", "twoPair", "threeOfAKind", "fullHouse", "fourOfAKind", "fiveOfAKind"}
+
+	for _, category := range order {
+		mergedHands = append(mergedHands, handCategories[category]...)
+	}
+	return mergedHands
+}
+
+func sortAllTheCategories() {
+	for _, category := range handCategories {
+		sort.Slice(category, func(i, j int) bool {
+			return customSort(category[i], category[j])
+		})
+	}
 }
 
 func cardRank(card byte) int {

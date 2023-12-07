@@ -1,20 +1,12 @@
 package main
 
 import (
-	"io"
 	"os"
-	"strings"
 	"testing"
 )
 
 func TestWithExampleInput(t *testing.T) {
-	file, _ := os.Open("testinput.txt")
-
-	defer file.Close()
-
-	content, _ := io.ReadAll(file)
-	input := strings.Split(string(content), "\n")
-	solution := calculatePart1(input)
+	solution := calculatePart1("testinput.txt")
 
 	if solution != 6440 {
 		t.Errorf("Result was incorrect, got: %d, want: %d.", solution, 6440)
