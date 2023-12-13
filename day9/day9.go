@@ -11,7 +11,7 @@ import (
 func main() {
 	part1, part2 := calculateSolution("input.txt")
 	fmt.Printf("Part 1: %d\n", part1)
-	fmt.Printf("Part 1: %d\n", part2)
+	fmt.Printf("Part 2: %d\n", part2)
 }
 
 func calculateSolution(filename string) (int, int) {
