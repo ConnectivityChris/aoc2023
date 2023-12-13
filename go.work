@@ -10,4 +10,10 @@ use (
   ./day6
   ./day7/part1
   ./day7/part2
+  ./day8
+  ./day9
+  ./day10
+  ./day11/part1
+  ./day11/part2
+  ./day12
 )
